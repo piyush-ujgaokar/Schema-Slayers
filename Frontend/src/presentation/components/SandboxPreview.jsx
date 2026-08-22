@@ -107,23 +107,23 @@ export default function SandboxPreview() {
   };
 
   return (
-    <div className="flex h-full text-white bg-slate-950">
+    <div className="flex h-full text-brand-text bg-brand-bg font-sans">
       {/* Simulation Screen */}
-      <div className="flex-1 p-5 border-r border-slate-900 flex flex-col">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-900">
-          <div className="flex items-center gap-2">
-            <Play size={16} className="text-emerald-400 fill-emerald-400" />
-            <h3 className="text-sm font-semibold">Simulator Viewport</h3>
+      <div className="flex-1 p-6 border-r border-brand-border flex flex-col">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-brand-border">
+          <div className="flex items-center gap-2.5">
+            <Play size={18} className="text-brand-primary fill-brand-primary shrink-0" />
+            <h3 className="text-base font-bold">Simulator Viewport</h3>
           </div>
-          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded px-2 py-1">
-            <span className="text-[10px] text-slate-400">Target Screen:</span>
+          <div className="flex items-center gap-2 bg-brand-card border border-brand-border rounded-xl px-4 py-2 shadow-sm">
+            <span className="text-xs text-brand-muted font-bold uppercase tracking-wider">Target Screen:</span>
             <select
               value={activePageId}
               onChange={(e) => setActivePageId(e.target.value)}
-              className="bg-transparent border-none text-xs text-indigo-400 font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent border-none text-sm text-brand-text font-bold focus:outline-none cursor-pointer"
             >
               {ir.frontend.pages.map((p) => (
-                <option key={p.id} value={p.id} className="bg-slate-900">
+                <option key={p.id} value={p.id} className="bg-brand-card">
                   {p.title} ({p.path})
                 </option>
               ))}
@@ -133,64 +133,64 @@ export default function SandboxPreview() {
 
         {/* Viewport Card */}
         {activePage ? (
-          <div className="flex-1 flex items-center justify-center p-6 bg-slate-900/40 rounded-xl border border-slate-850 relative">
-            <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
+          <div className="flex-1 flex items-center justify-center p-6 bg-brand-card border border-brand-border rounded-3xl shadow-md relative">
+            <div className="max-w-md w-full bg-brand-bg/50 border border-brand-border rounded-2xl shadow-sm overflow-hidden">
               {/* Header bar */}
-              <div className="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                <span className="text-[10px] text-slate-400 font-mono ml-4 select-none">localhost:3000{activePage.path}</span>
+              <div className="bg-brand-card px-4 py-3 border-b border-brand-border flex items-center gap-2 shadow-sm">
+                <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+                <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                <span className="text-xs text-brand-muted font-mono ml-4 select-none">localhost:3000{activePage.path}</span>
               </div>
 
               {/* Render Forms */}
               {comp.type === 'Form' ? (
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                  <h4 className="text-lg font-bold text-slate-100 mb-4">{comp.title}</h4>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                  <h4 className="text-xl font-extrabold text-brand-text mb-4">{comp.title}</h4>
                   {comp.fields?.map((f, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        {f.label} {f.required && <span className="text-rose-400">*</span>}
+                    <div key={idx} className="space-y-1.5">
+                      <label className="block text-xs font-bold text-brand-text uppercase tracking-wider">
+                        {f.label} {f.required && <span className="text-rose-500">*</span>}
                       </label>
                       <input
                         type={f.type}
                         placeholder={f.placeholder}
                         value={formData[f.name] || ''}
                         onChange={(e) => handleInputChange(f.name, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-850 focus:border-indigo-500 rounded text-xs text-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none"
                       />
                     </div>
                   ))}
                   <button
                     type="submit"
-                    className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 font-semibold rounded text-xs text-white transition active:scale-[0.98]"
+                    className="w-full mt-4 py-3 bg-brand-primary hover:bg-brand-primary-hover font-bold rounded-xl text-sm text-brand-bg transition active:scale-[0.98] cursor-pointer"
                   >
                     {comp.submitButton?.text || 'Submit'}
                   </button>
                 </form>
               ) : (
                 /* Render Lists */
-                <div className="p-5">
-                  <h4 className="text-lg font-bold text-slate-100 mb-4">{comp.title}</h4>
+                <div className="p-6">
+                  <h4 className="text-xl font-bold text-brand-text mb-4">{comp.title}</h4>
                   
                   {simulationDb.length === 0 ? (
-                    <div className="py-8 text-center text-slate-500 text-xs italic">
+                    <div className="py-10 text-center text-brand-muted text-sm italic">
                       No records returned. Submit a wired form to populate rows!
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                    <div className="space-y-2.5 max-h-60 overflow-y-auto">
                       {simulationDb.map((row, idx) => (
-                        <div key={idx} className="p-3 bg-slate-950/40 rounded border border-slate-850 flex flex-col gap-1 text-[11px]">
-                          <div className="flex justify-between items-center text-[10px] text-slate-500 pb-1 border-b border-slate-850/30">
-                            <span className="font-mono text-indigo-400">ID: {row._id}</span>
+                        <div key={idx} className="p-4 bg-brand-card border border-brand-border rounded-xl flex flex-col gap-2 text-xs shadow-sm">
+                          <div className="flex justify-between items-center text-xs text-brand-muted pb-1.5 border-b border-brand-border/40">
+                            <span className="font-mono text-brand-text font-bold">ID: {row._id}</span>
                             <span>{new Date(row.createdAt).toLocaleTimeString()}</span>
                           </div>
                           {Object.entries(row)
                             .filter(([k]) => k !== '_id' && k !== '__model' && k !== 'createdAt')
                             .map(([k, v]) => (
                               <div key={k} className="flex justify-between">
-                                <span className="text-slate-400 font-mono">{k}:</span>
-                                <span className="text-slate-200 font-semibold">{v}</span>
+                                <span className="text-brand-muted font-mono font-medium">{k}:</span>
+                                <span className="text-brand-text font-bold">{v}</span>
                               </div>
                             ))}
                         </div>
@@ -202,35 +202,35 @@ export default function SandboxPreview() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-500 text-xs italic">
+          <div className="flex-1 flex items-center justify-center text-brand-muted text-sm italic">
             Create a Frontend page to begin testing.
           </div>
         )}
       </div>
 
       {/* Simulator logs & database viewer */}
-      <div className="w-80 p-5 flex flex-col h-full bg-slate-950/60 border-l border-slate-900">
+      <div className="w-80 p-5 flex flex-col h-full bg-brand-card border-l border-brand-border">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Database size={14} className="text-indigo-400" /> In-Memory Database
+          <h4 className="text-xs font-bold text-brand-text uppercase tracking-wider flex items-center gap-1.5">
+            <Database size={16} className="text-brand-primary" /> In-Memory Database
           </h4>
           <button
             onClick={handleClearDb}
-            className="text-[10px] text-slate-500 hover:text-rose-400 font-semibold flex items-center gap-1"
+            className="text-xs text-brand-muted hover:text-rose-500 font-bold flex items-center gap-1 transition"
           >
-            <RefreshCw size={10} /> Reset
+            <RefreshCw size={12} /> Reset
           </button>
         </div>
 
         {/* Dynamic DB rows list */}
-        <div className="flex-1 min-h-[140px] max-h-[220px] overflow-y-auto bg-slate-950 border border-slate-900 rounded-lg p-2.5 text-[10px] font-mono space-y-2 mb-4">
+        <div className="flex-1 min-h-[140px] max-h-[220px] overflow-y-auto bg-brand-bg/50 border border-brand-border rounded-2xl p-3.5 text-xs font-mono space-y-2.5 mb-4">
           {simulationDb.length === 0 ? (
-            <span className="text-slate-600 italic block py-4 text-center">Collection records are empty.</span>
+            <span className="text-brand-muted italic block py-4 text-center">Collection records are empty.</span>
           ) : (
             simulationDb.map((row, idx) => (
-              <div key={idx} className="bg-slate-900/60 p-2 rounded border border-slate-850/80">
-                <span className="text-indigo-400 font-bold block mb-1">Mongoose Entity: {row.__model}</span>
-                <pre className="text-[9px] text-slate-300 overflow-x-auto">{JSON.stringify(row, null, 2)}</pre>
+              <div key={idx} className="bg-brand-card p-2.5 rounded-xl border border-brand-border">
+                <span className="text-brand-text font-bold block mb-1">Mongoose: {row.__model}</span>
+                <pre className="text-xs text-brand-muted overflow-x-auto">{JSON.stringify(row, null, 2)}</pre>
               </div>
             ))
           )}
@@ -238,12 +238,12 @@ export default function SandboxPreview() {
 
         {/* Runtime Console Logs */}
         <div className="flex-[1.5] flex flex-col min-h-[180px]">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <h4 className="text-xs font-bold text-brand-text uppercase tracking-wider mb-2">
             Server Console Output
           </h4>
-          <div className="flex-1 overflow-y-auto bg-slate-950 border border-slate-900 rounded-lg p-3 text-[10px] font-mono text-emerald-400 space-y-1.5">
+          <div className="flex-1 overflow-y-auto bg-[#1E1E1C] border border-brand-border rounded-2xl p-3.5 text-xs font-mono text-lime-400 space-y-2 shadow-inner">
             {logs.length === 0 ? (
-              <span className="text-slate-600 italic">[Sandbox Console] Log listener initialized.</span>
+              <span className="text-[#6E6E6A] italic">[Console] Server runtime log listener initialized.</span>
             ) : (
               logs.map((log, index) => (
                 <div key={index} className="leading-relaxed whitespace-pre-wrap">{log}</div>

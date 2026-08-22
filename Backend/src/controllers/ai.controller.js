@@ -179,7 +179,7 @@ exports.processPrompt = async (req, res) => {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.6-flash',
       generationConfig: {
         responseMimeType: "application/json",
       }
@@ -216,6 +216,7 @@ exports.processPrompt = async (req, res) => {
     });
 
     const text = response.response.text().trim();
+    console.log("ai response ",text);
     
     // Parse the output (cleaning up any accidental markdown wrapper tags if returned)
     const jsonStr = text.replace(/^```json/, '').replace(/```$/, '').trim();

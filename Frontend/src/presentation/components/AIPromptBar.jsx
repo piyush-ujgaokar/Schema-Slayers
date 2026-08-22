@@ -28,10 +28,10 @@ export default function AIPromptBar() {
     <div className="w-full max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="relative flex items-center">
         {/* Glow effect */}
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+        <div className="absolute -inset-0.5 bg-brand-accent/20 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
         
-        <div className="relative w-full flex bg-slate-900 border border-slate-800 focus-within:border-indigo-500 rounded-xl overflow-hidden shadow-2xl">
-          <div className="flex items-center pl-4 text-indigo-400">
+        <div className="relative w-full flex bg-brand-card border border-brand-border focus-within:border-brand-accent rounded-xl overflow-hidden shadow-md">
+          <div className="flex items-center pl-4 text-brand-primary">
             <Sparkles size={18} className={aiLoading ? 'animate-pulse' : ''} />
           </div>
           
@@ -40,20 +40,20 @@ export default function AIPromptBar() {
             disabled={aiLoading}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask AI to architect: 'Add product CRUD flow' or 'Create JWT auth system'..."
-            className="w-full py-3.5 pl-3 pr-24 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none disabled:opacity-50"
+            placeholder="Ask AI: 'Add product CRUD flow' or 'Create JWT auth system'..."
+            className="w-full py-3 pl-3 pr-24 bg-transparent text-sm text-brand-text placeholder-brand-muted focus:outline-none disabled:opacity-50"
           />
 
-          <div className="absolute right-2 top-2">
+          <div className="absolute right-2 top-1.5">
             <button
               type="submit"
               disabled={aiLoading || !prompt.trim()}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition active:scale-[0.98]"
+              className="px-4 py-1.5 bg-brand-primary hover:bg-brand-primary-hover disabled:bg-brand-border disabled:text-brand-muted text-brand-bg text-xs font-bold rounded-lg flex items-center gap-1.5 transition active:scale-[0.98] cursor-pointer"
             >
               {aiLoading ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  Generating...
+                  Building...
                 </>
               ) : (
                 <>
@@ -67,8 +67,8 @@ export default function AIPromptBar() {
       </form>
 
       {statusMsg && (
-        <p className={`text-center text-[11px] mt-2 font-medium transition-all ${
-          statusMsg.includes('Error') ? 'text-rose-400' : 'text-indigo-300'
+        <p className={`text-center text-[10px] mt-1.5 font-bold transition-all ${
+          statusMsg.includes('Error') ? 'text-rose-600' : 'text-brand-primary'
         }`}>
           {statusMsg}
         </p>

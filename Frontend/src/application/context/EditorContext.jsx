@@ -66,7 +66,10 @@ const initialIR = {
 };
 
 export const EditorProvider = ({ children }) => {
-  const [ir, setIr] = useState(initialIR);
+  const [ir, setIr] = useState(() => {
+    const saved = localStorage.getItem('visual_builder_current_ir');
+    return saved ? JSON.parse(saved) : initialIR;
+  });
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null); // Node details for inspector panel
@@ -76,7 +79,23 @@ export const EditorProvider = ({ children }) => {
   const [simulationDb, setSimulationDb] = useState([]); // Simulated backend in-memory database records
   const [diffAddedNodes, setDiffAddedNodes] = useState(new Set()); // Nodes marked as new from AI changes
   const [projectsList, setProjectsList] = useState([]);
-  const [currentProject, setCurrentProject] = useState(null);
+  const [currentProject, setCurrentProject] = useState(() => {
+    const saved = localStorage.getItem('visual_builder_current_project');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Persist IR and currentProject to localStorage on changes
+  useEffect(() => {
+    localStorage.setItem('visual_builder_current_ir', JSON.stringify(ir));
+  }, [ir]);
+
+  useEffect(() => {
+    if (currentProject) {
+      localStorage.setItem('visual_builder_current_project', JSON.stringify(currentProject));
+    } else {
+      localStorage.removeItem('visual_builder_current_project');
+    }
+  }, [currentProject]);
 
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -204,10 +223,31 @@ export const EditorProvider = ({ children }) => {
     }
   };
 
-  // Compile code initially and when IR changes
+  // Compile code after a short delay (debounce) to prevent cursor jumping while typing
   useEffect(() => {
-    triggerCompilation();
+    const timer = setTimeout(() => {
+      triggerCompilation();
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [ir]);
+
+  // Auto-save changes to the database in the background if a project is open
+  useEffect(() => {
+    if (currentProject) {
+      const timer = setTimeout(async () => {
+        try {
+          await apiClient.post('/projects', {
+            name: currentProject.name,
+            ir
+          });
+          console.log('Background auto-save to MongoDB succeeded.');
+        } catch (error) {
+          console.error('Background auto-save failed:', error);
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [ir, currentProject]);
 
   // AI assistant prompt processor
   const sendAIPrompt = async (prompt) => {
@@ -387,6 +427,243 @@ export const EditorProvider = ({ children }) => {
     }
   };
 
+  const createNewProject = () => {
+    const blankIR = {
+      projectInfo: {
+        name: 'new-visual-stack',
+        theme: 'modern-indigo'
+      },
+      database: { models: [] },
+      backend: { routes: [] },
+      frontend: { pages: [] }
+    };
+    setIr(blankIR);
+    setCurrentProject(null);
+    setSelectedNode(null);
+    setDiffAddedNodes(new Set());
+    localStorage.removeItem('visual_builder_current_project');
+    localStorage.setItem('visual_builder_current_ir', JSON.stringify(blankIR));
+  };
+
+  const updateCompiledFile = (filepath, content) => {
+    // 1. Update local compiledFiles state
+    setCompiledFiles(prev => ({
+      ...prev,
+      [filepath]: content
+    }));
+
+    // 2. Bidirectional sync: Parse Mongoose Model fields back to visual IR models list
+    if (filepath.startsWith('backend/src/models/') && filepath.endsWith('.model.js')) {
+      const filename = filepath.split('/').pop();
+      const modelName = filename.replace('.model.js', '');
+
+      try {
+        const schemaRegex = /new\s+mongoose\.Schema\s*\(\s*\{([\s\S]*?)\}\s*(?:,|\))/i;
+        const match = content.match(schemaRegex);
+        const parsedFields = [];
+
+        if (match) {
+          const fieldsBlock = match[1];
+          const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
+          let fieldMatch;
+          
+          while ((fieldMatch = fieldRegex.exec(fieldsBlock)) !== null) {
+            const fieldName = fieldMatch[1];
+            let fieldType = 'String';
+            let required = false;
+            let unique = false;
+
+            if (fieldMatch[2]) {
+              const innerProps = fieldMatch[2];
+              const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
+              if (typeMatch) fieldType = typeMatch[1];
+              if (innerProps.match(/required\s*:\s*true/i)) required = true;
+              if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
+            } else if (fieldMatch[3]) {
+              fieldType = fieldMatch[3];
+            }
+
+            if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
+              parsedFields.push({
+                name: fieldName,
+                type: fieldType,
+                required,
+                unique
+              });
+            }
+          }
+        }
+
+        // Also check for any .add({ ... }) blocks (e.g. soft delete extensions)
+        const addRegex = /\.add\s*\(\s*\{([\s\S]*?)\}\s*\)/gi;
+        let addMatch;
+        while ((addMatch = addRegex.exec(content)) !== null) {
+          const addBlock = addMatch[1];
+          const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
+          let fieldMatch;
+          
+          while ((fieldMatch = fieldRegex.exec(addBlock)) !== null) {
+            const fieldName = fieldMatch[1];
+            let fieldType = 'String';
+            let required = false;
+            let unique = false;
+
+            if (fieldMatch[2]) {
+              const innerProps = fieldMatch[2];
+              const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
+              if (typeMatch) fieldType = typeMatch[1];
+              if (innerProps.match(/required\s*:\s*true/i)) required = true;
+              if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
+            } else if (fieldMatch[3]) {
+              fieldType = fieldMatch[3];
+            }
+
+            if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
+              if (!parsedFields.some(f => f.name === fieldName)) {
+                parsedFields.push({
+                  name: fieldName,
+                  type: fieldType,
+                  required,
+                  unique
+                });
+              }
+            }
+          }
+        }
+
+        const targetModel = ir.database.models.find(m => m.name === modelName);
+        if (targetModel) {
+          const fieldsChanged = JSON.stringify(targetModel.fields) !== JSON.stringify(parsedFields);
+          if (fieldsChanged) {
+            setIr(prev => {
+              const updatedModels = prev.database.models.map(m => {
+                if (m.name === modelName) {
+                  return { ...m, fields: parsedFields };
+                }
+                return m;
+              });
+              return {
+                ...prev,
+                database: { ...prev.database, models: updatedModels }
+              };
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync code edits back to visual models:', err);
+      }
+    }
+  };
+
+  const bindNodesManual = (sourceId, targetId) => {
+    // A. Page Node (source) ➔ Route Node (target)
+    if (sourceId.startsWith('page_') && targetId.startsWith('route_')) {
+      setIr(prev => {
+        const updatedPages = prev.frontend.pages.map(p => {
+          if (p.id === sourceId) {
+            const updatedComp = { ...p.components[0] };
+            if (updatedComp.submitButton) {
+              updatedComp.submitButton = { ...updatedComp.submitButton, routeId: targetId };
+            }
+            return { ...p, components: [updatedComp] };
+          }
+          return p;
+        });
+        return {
+          ...prev,
+          frontend: { ...prev.frontend, pages: updatedPages }
+        };
+      });
+    }
+
+    // B. Route Node (source) ➔ DB Model Node (target)
+    if (sourceId.startsWith('route_') && targetId.startsWith('model_')) {
+      setIr(prev => {
+        const targetModel = prev.database.models.find(m => m.id === targetId);
+        if (!targetModel) return prev;
+        const modelName = targetModel.name;
+
+        const updatedRoutes = prev.backend.routes.map(r => {
+          if (r.id === sourceId) {
+            const stepType = r.method === 'POST' ? 'db_create' : 'db_query';
+            const updatedSteps = [...r.logicSteps];
+            const dbStepIdx = updatedSteps.findIndex(s => s.type === 'db_create' || s.type === 'db_query');
+            if (dbStepIdx !== -1) {
+              updatedSteps[dbStepIdx] = { ...updatedSteps[dbStepIdx], model: modelName };
+            } else {
+              updatedSteps.push({ type: stepType, model: modelName });
+            }
+            return { ...r, logicSteps: updatedSteps };
+          }
+          return r;
+        });
+        return {
+          ...prev,
+          backend: { ...prev.backend, routes: updatedRoutes }
+        };
+      });
+    }
+  };
+
+  const unbindNodesManual = (sourceId, targetId) => {
+    // A. Page Node (source) ➔ Route Node (target)
+    if (sourceId.startsWith('page_') && targetId.startsWith('route_')) {
+      setIr(prev => {
+        const updatedPages = prev.frontend.pages.map(p => {
+          if (p.id === sourceId) {
+            const updatedComp = { ...p.components[0] };
+            if (updatedComp.submitButton) {
+              updatedComp.submitButton = { ...updatedComp.submitButton, routeId: "" };
+            }
+            return { ...p, components: [updatedComp] };
+          }
+          return p;
+        });
+        return {
+          ...prev,
+          frontend: { ...prev.frontend, pages: updatedPages }
+        };
+      });
+    }
+
+    // B. Route Node (source) ➔ DB Model Node (target)
+    if (sourceId.startsWith('route_') && targetId.startsWith('model_')) {
+      setIr(prev => {
+        const targetModel = prev.database.models.find(m => m.id === targetId);
+        if (!targetModel) return prev;
+        const modelName = targetModel.name;
+
+        const updatedRoutes = prev.backend.routes.map(r => {
+          if (r.id === sourceId) {
+            const updatedSteps = r.logicSteps.map(s => {
+              if (s.model === modelName) {
+                const { model, ...rest } = s;
+                return rest;
+              }
+              return s;
+            });
+            return { ...r, logicSteps: updatedSteps };
+          }
+          return r;
+        });
+        return {
+          ...prev,
+          backend: { ...prev.backend, routes: updatedRoutes }
+        };
+      });
+    }
+  };
+
+  const fetchAICodeTemplates = async (filename, code) => {
+    try {
+      const response = await apiClient.post('/ai/code-templates', { filename, code });
+      return { success: true, templates: response.data.templates };
+    } catch (error) {
+      console.error('Failed to generate code templates:', error);
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  };
+
   return (
     <EditorContext.Provider value={{
       ir,
@@ -416,7 +693,12 @@ export const EditorProvider = ({ children }) => {
       saveProject,
       loadProject,
       deleteSavedProject,
-      fetchProjects
+      fetchProjects,
+      updateCompiledFile,
+      fetchAICodeTemplates,
+      createNewProject,
+      bindNodesManual,
+      unbindNodesManual
     }}>
       {children}
     </EditorContext.Provider>

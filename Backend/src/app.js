@@ -14,11 +14,13 @@ const authRoutes = require('./routes/auth.routes');
 const compileRoutes = require('./routes/compile.routes');
 const aiRoutes = require('./routes/ai.routes');
 const projectRoutes = require('./routes/project.routes');
+const aiTemplatesRoutes = require('./routes/aiTemplates.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/compile', compileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/ai/code-templates', aiTemplatesRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

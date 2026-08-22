@@ -92,13 +92,13 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-80 bg-slate-900 border-l border-slate-800 text-white flex flex-col h-full shadow-2xl relative z-20">
+    <aside className="w-80 bg-brand-card border-l border-brand-border text-brand-text flex flex-col h-full shadow-lg relative z-25">
       {/* Tabs */}
-      <div className="flex border-b border-slate-850">
+      <div className="flex border-b border-brand-border shrink-0">
         <button
           onClick={() => setActiveTab('add')}
-          className={`flex-1 py-3 text-sm font-semibold border-b-2 transition ${
-            activeTab === 'add' ? 'border-indigo-500 text-indigo-400 bg-slate-850/30' : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`flex-1 py-4 text-sm font-bold border-b-2 uppercase tracking-wide transition ${
+            activeTab === 'add' ? 'border-brand-primary text-brand-text bg-brand-bg/20' : 'border-transparent text-brand-muted hover:text-brand-text'
           }`}
         >
           Toolbox
@@ -108,9 +108,9 @@ export default function Sidebar() {
             if (selectedNode) setActiveTab('inspect');
           }}
           disabled={!selectedNode}
-          className={`flex-1 py-3 text-sm font-semibold border-b-2 transition ${
-            !selectedNode ? 'opacity-40 cursor-not-allowed text-slate-500' :
-            activeTab === 'inspect' ? 'border-indigo-500 text-indigo-400 bg-slate-850/30' : 'border-transparent text-slate-400 hover:text-slate-200'
+          className={`flex-1 py-4 text-sm font-bold border-b-2 uppercase tracking-wide transition ${
+            !selectedNode ? 'opacity-30 cursor-not-allowed text-brand-muted' :
+            activeTab === 'inspect' ? 'border-brand-primary text-brand-text bg-brand-bg/20' : 'border-transparent text-brand-muted hover:text-brand-text'
           }`}
         >
           Inspector
@@ -122,38 +122,38 @@ export default function Sidebar() {
         {activeTab === 'add' && (
           <div className="space-y-6">
             {/* Create DB Schema */}
-            <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
-              <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Database size={14} /> Add DB Model
+            <div className="bg-brand-bg/40 p-4 rounded-2xl border border-brand-border">
+              <h3 className="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Database size={16} className="text-indigo-600" /> Add DB Model
               </h3>
-              <form onSubmit={handleAddDBModel} className="space-y-2">
+              <form onSubmit={handleAddDBModel} className="space-y-3">
                 <input
                   type="text"
                   placeholder="e.g. Product, Order"
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded text-xs text-white focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition"
+                  className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-brand-bg rounded-xl text-sm font-bold flex items-center justify-center gap-1 transition cursor-pointer"
                 >
-                  <Plus size={14} /> Create Model
+                  <Plus size={16} /> Create Model
                 </button>
               </form>
             </div>
 
             {/* Create API Route */}
-            <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
-              <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Server size={14} /> Add API Endpoint
+            <div className="bg-brand-bg/40 p-4 rounded-2xl border border-brand-border">
+              <h3 className="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Server size={16} className="text-purple-600" /> Add API Endpoint
               </h3>
-              <form onSubmit={handleAddRoute} className="space-y-2">
+              <form onSubmit={handleAddRoute} className="space-y-3">
                 <div className="flex gap-1.5">
                   <select
                     value={routeMethod}
                     onChange={(e) => setRouteMethod(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 focus:border-purple-500 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                    className="bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl px-3 py-2 text-sm text-brand-text focus:outline-none cursor-pointer"
                   >
                     <option>GET</option>
                     <option>POST</option>
@@ -164,43 +164,43 @@ export default function Sidebar() {
                     type="text"
                     value={routePath}
                     onChange={(e) => setRoutePath(e.target.value)}
-                    className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 focus:border-purple-500 rounded text-xs text-white focus:outline-none font-mono"
+                    className="flex-1 px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none font-mono"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition"
+                  className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-brand-bg rounded-xl text-sm font-bold flex items-center justify-center gap-1 transition cursor-pointer"
                 >
-                  <Plus size={14} /> Create Route
+                  <Plus size={16} /> Create Route
                 </button>
               </form>
             </div>
 
             {/* Create UI Page */}
-            <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
-              <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Monitor size={14} /> Add Frontend Page
+            <div className="bg-brand-bg/40 p-4 rounded-2xl border border-brand-border">
+              <h3 className="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Monitor size={16} className="text-emerald-600" /> Add Frontend Page
               </h3>
-              <form onSubmit={handleAddPage} className="space-y-2">
+              <form onSubmit={handleAddPage} className="space-y-3">
                 <input
                   type="text"
                   placeholder="Page Title (e.g. Products)"
                   value={pageTitle}
                   onChange={(e) => setPageTitle(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded text-xs text-white focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Route Path (e.g. /products)"
                   value={pagePath}
                   onChange={(e) => setPagePath(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded text-xs text-white focus:outline-none font-mono"
+                  className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none font-mono"
                 />
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition"
+                  className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-brand-bg rounded-xl text-sm font-bold flex items-center justify-center gap-1 transition cursor-pointer"
                 >
-                  <Plus size={14} /> Create Page
+                  <Plus size={16} /> Create Page
                 </button>
               </form>
             </div>
@@ -210,18 +210,18 @@ export default function Sidebar() {
         {/* INSPECT PANEL */}
         {activeTab === 'inspect' && selectedNode && (
           <div className="space-y-5">
-            <div className="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+            <div className="flex justify-between items-center bg-brand-bg p-3.5 rounded-2xl border border-brand-border">
               <div className="flex items-center gap-2">
-                {selectedNode.type === 'database' && <Database size={16} className="text-indigo-400" />}
-                {selectedNode.type === 'backend' && <Server size={16} className="text-purple-400" />}
-                {selectedNode.type === 'frontend' && <Monitor size={16} className="text-emerald-400" />}
-                <span className="text-xs font-bold text-slate-300 uppercase">{selectedNode.type} Attributes</span>
+                {selectedNode.type === 'database' && <Database size={18} className="text-indigo-600" />}
+                {selectedNode.type === 'backend' && <Server size={18} className="text-purple-600" />}
+                {selectedNode.type === 'frontend' && <Monitor size={18} className="text-emerald-600" />}
+                <span className="text-xs font-bold text-brand-text uppercase tracking-wider">{selectedNode.type} Attributes</span>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="text-slate-500 hover:text-slate-300"
+                className="text-brand-muted hover:text-brand-text transition"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
@@ -229,7 +229,7 @@ export default function Sidebar() {
             {selectedNode.type === 'database' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Model Name</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Model Name</label>
                   <input
                     type="text"
                     value={selectedNode.data.name}
@@ -237,27 +237,27 @@ export default function Sidebar() {
                       updateDatabaseModel(selectedNode.data.id, { name: e.target.value });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, name: e.target.value } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-semibold text-white focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm font-semibold text-brand-text focus:outline-none"
                   />
                 </div>
 
                 {/* Fields list */}
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Fields Schema</label>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Fields Schema</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
                     {selectedNode.data.fields.map((f, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-slate-950/30 rounded border border-slate-850">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-mono text-slate-200">{f.name}</span>
-                          <span className="text-[9px] text-slate-500 font-medium">
+                      <div key={idx} className="flex items-center justify-between p-3 bg-brand-bg/30 rounded-xl border border-brand-border/60">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-mono font-bold text-brand-text">{f.name}</span>
+                          <span className="text-xs text-brand-muted font-bold">
                             {f.type} {f.required && '• required'} {f.unique && '• unique'}
                           </span>
                         </div>
                         <button
                           onClick={() => handleDeleteField(f.name)}
-                          className="text-slate-500 hover:text-rose-400 p-1"
+                          className="text-brand-muted hover:text-rose-500 p-1.5 transition"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     ))}
@@ -265,39 +265,39 @@ export default function Sidebar() {
                 </div>
 
                 {/* Add field Form */}
-                <form onSubmit={handleAddField} className="bg-slate-950/40 p-3 rounded-lg border border-slate-850 space-y-2.5">
-                  <span className="block text-[10px] font-bold text-indigo-400 uppercase">New Attribute</span>
+                <form onSubmit={handleAddField} className="bg-brand-bg/40 p-4 rounded-2xl border border-brand-border space-y-3">
+                  <span className="block text-xs font-bold text-brand-text uppercase tracking-wider">New Attribute</span>
                   <input
                     type="text"
                     placeholder="Field Name"
                     value={newFieldName}
                     onChange={(e) => setNewFieldName(e.target.value)}
-                    className="w-full px-2.5 py-1 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none"
+                    className="w-full px-4 py-2 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none"
                   />
                   <div className="flex justify-between items-center gap-2">
                     <select
                       value={newFieldType}
                       onChange={(e) => setNewFieldType(e.target.value)}
-                      className="bg-slate-950 border border-slate-850 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
+                      className="bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl px-3 py-1.5 text-xs text-brand-text focus:outline-none cursor-pointer"
                     >
                       <option>String</option>
                       <option>Number</option>
                       <option>Boolean</option>
                       <option>Date</option>
                     </select>
-                    <label className="flex items-center gap-1 text-[10px] text-slate-300">
+                    <label className="flex items-center gap-1.5 text-xs text-brand-text font-bold">
                       <input
                         type="checkbox"
                         checked={newFieldReq}
                         onChange={(e) => setNewFieldReq(e.target.checked)}
-                        className="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                        className="rounded bg-brand-card border-brand-border text-brand-primary focus:ring-0"
                       />
                       Required
                     </label>
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-1 bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/20 text-indigo-300 hover:text-white rounded text-[11px] font-semibold transition"
+                    className="w-full py-2 bg-brand-primary hover:bg-brand-primary-hover text-brand-bg rounded-xl text-xs font-bold transition"
                   >
                     Add Field
                   </button>
@@ -305,9 +305,9 @@ export default function Sidebar() {
 
                 <button
                   onClick={() => deleteDatabaseModel(selectedNode.data.id)}
-                  className="w-full mt-4 py-2 border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  className="w-full mt-4 py-3 border border-rose-200 hover:bg-rose-550 hover:bg-rose-50 text-rose-600 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <Trash2 size={14} /> Delete Model
+                  <Trash2 size={16} /> Delete Model
                 </button>
               </div>
             )}
@@ -316,7 +316,7 @@ export default function Sidebar() {
             {selectedNode.type === 'backend' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Route Path</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Route Path</label>
                   <input
                     type="text"
                     value={selectedNode.data.path}
@@ -324,19 +324,19 @@ export default function Sidebar() {
                       updateBackendRoute(selectedNode.data.id, { path: e.target.value });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, path: e.target.value } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-semibold text-white font-mono focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm font-semibold text-brand-text font-mono focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">HTTP Method</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">HTTP Method</label>
                   <select
                     value={selectedNode.data.method}
                     onChange={(e) => {
                       updateBackendRoute(selectedNode.data.id, { method: e.target.value });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, method: e.target.value } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-semibold text-white focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm font-bold text-brand-text focus:outline-none cursor-pointer"
                   >
                     <option>GET</option>
                     <option>POST</option>
@@ -345,8 +345,8 @@ export default function Sidebar() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between p-2.5 bg-slate-950/20 rounded border border-slate-850">
-                  <span className="text-xs text-slate-300 font-semibold">Enable Authentication Guard</span>
+                <div className="flex items-center justify-between p-3.5 bg-brand-bg/40 rounded-2xl border border-brand-border">
+                  <span className="text-xs text-brand-text font-bold">Authentication Guard</span>
                   <input
                     type="checkbox"
                     checked={selectedNode.data.authRequired}
@@ -354,15 +354,15 @@ export default function Sidebar() {
                       updateBackendRoute(selectedNode.data.id, { authRequired: e.target.checked });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, authRequired: e.target.checked } });
                     }}
-                    className="h-4 w-4 rounded bg-slate-950 border-slate-800 text-purple-600 focus:ring-0"
+                    className="h-4.5 w-4.5 rounded bg-brand-card border-brand-border text-brand-primary focus:ring-0"
                   />
                 </div>
 
                 <div>
-                  <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Logic Pipeline</span>
-                  <div className="space-y-1.5 pl-2 border-l-2 border-purple-500">
+                  <span className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Logic Pipeline</span>
+                  <div className="space-y-2 pl-3 border-l-2 border-brand-primary">
                     {selectedNode.data.logicSteps.map((step, idx) => (
-                      <div key={idx} className="bg-slate-950/40 p-2 rounded border border-slate-850 text-xs text-slate-300 font-mono">
+                      <div key={idx} className="bg-brand-bg/40 p-3 rounded-xl border border-brand-border text-xs text-brand-text font-mono">
                         {idx + 1}. {step.type} {step.model ? `➔ ${step.model}` : ''}
                       </div>
                     ))}
@@ -371,9 +371,9 @@ export default function Sidebar() {
 
                 <button
                   onClick={() => deleteBackendRoute(selectedNode.data.id)}
-                  className="w-full mt-4 py-2 border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  className="w-full mt-4 py-3 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <Trash2 size={14} /> Delete Endpoint
+                  <Trash2 size={16} /> Delete Endpoint
                 </button>
               </div>
             )}
@@ -382,7 +382,7 @@ export default function Sidebar() {
             {selectedNode.type === 'frontend' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Page Title</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Page Title</label>
                   <input
                     type="text"
                     value={selectedNode.data.title}
@@ -390,12 +390,12 @@ export default function Sidebar() {
                       updateFrontendPage(selectedNode.data.id, { title: e.target.value });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, title: e.target.value } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-semibold text-white focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm font-semibold text-brand-text focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Routing Path</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Routing Path</label>
                   <input
                     type="text"
                     value={selectedNode.data.path}
@@ -403,13 +403,13 @@ export default function Sidebar() {
                       updateFrontendPage(selectedNode.data.id, { path: e.target.value });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, path: e.target.value } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-semibold text-white font-mono focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text font-mono focus:outline-none"
                   />
                 </div>
 
                 {/* Sub components layout */}
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Component Template</label>
+                  <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Component Template</label>
                   <select
                     value={selectedNode.data.components[0]?.type || 'Form'}
                     onChange={(e) => {
@@ -421,7 +421,7 @@ export default function Sidebar() {
                       updateFrontendPage(selectedNode.data.id, { components: [updatedComp] });
                       setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, components: [updatedComp] } });
                     }}
-                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm font-bold text-brand-text focus:outline-none cursor-pointer"
                   >
                     <option>Form</option>
                     <option>List</option>
@@ -431,7 +431,7 @@ export default function Sidebar() {
                 {/* Render submit mapping selector if Form type */}
                 {selectedNode.data.components[0]?.type === 'Form' && (
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Button Action Trigger</label>
+                    <label className="block text-xs font-bold text-brand-muted mb-1.5 uppercase tracking-wider">Button Action Trigger</label>
                     <select
                       value={selectedNode.data.components[0]?.submitButton?.routeId || ''}
                       onChange={(e) => {
@@ -445,7 +445,7 @@ export default function Sidebar() {
                         updateFrontendPage(selectedNode.data.id, { components: [updatedComp] });
                         setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, components: [updatedComp] } });
                       }}
-                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none font-mono"
+                      className="w-full px-4 py-2.5 bg-brand-card border border-brand-border focus:border-brand-primary rounded-xl text-sm text-brand-text focus:outline-none font-mono cursor-pointer"
                     >
                       <option value="">-- None --</option>
                       {ir.backend.routes.map((r) => (
@@ -459,9 +459,9 @@ export default function Sidebar() {
 
                 <button
                   onClick={() => deleteFrontendPage(selectedNode.data.id)}
-                  className="w-full mt-4 py-2 border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  className="w-full mt-4 py-3 border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <Trash2 size={14} /> Delete Page
+                  <Trash2 size={16} /> Delete Page
                 </button>
               </div>
             )}

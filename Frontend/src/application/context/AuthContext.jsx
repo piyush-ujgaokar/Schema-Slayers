@@ -53,6 +53,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('builder_token');
+    localStorage.removeItem('visual_builder_current_ir');
+    localStorage.removeItem('visual_builder_current_project');
+    localStorage.removeItem('visual_builder_active_tab');
+    localStorage.removeItem('visual_builder_selected_file');
     setUser(null);
   };
 
