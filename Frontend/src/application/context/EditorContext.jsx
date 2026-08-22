@@ -74,6 +74,22 @@ export const EditorProvider = ({ children }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [simulationDb, setSimulationDb] = useState([]); // Simulated backend in-memory database records
   const [diffAddedNodes, setDiffAddedNodes] = useState(new Set()); // Nodes marked as new from AI changes
+  const [projectsList, setProjectsList] = useState([]);
+  const [currentProject, setCurrentProject] = useState(null);
+
+  // Fetch projects on mount
+  const fetchProjects = async () => {
+    try {
+      const response = await apiClient.get('/projects');
+      setProjectsList(response.data.projects);
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   // Convert IR schema to React Flow Nodes & Edges
   useEffect(() => {
@@ -324,6 +340,42 @@ export const EditorProvider = ({ children }) => {
     if (selectedNode?.id === id) setSelectedNode(null);
   };
 
+  const saveProject = async (name) => {
+    try {
+      const response = await apiClient.post('/projects', {
+        id: currentProject?.id,
+        name,
+        ir
+      });
+      const saved = response.data.project;
+      setCurrentProject({ id: saved.id, name: saved.name });
+      await fetchProjects();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  };
+
+  const loadProject = (project) => {
+    setIr(project.ir);
+    setCurrentProject({ id: project.id, name: project.name });
+  };
+
+  const deleteSavedProject = async (id) => {
+    try {
+      await apiClient.delete(`/projects/${id}`);
+      if (currentProject?.id === id) {
+        setCurrentProject(null);
+      }
+      await fetchProjects();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  };
+
   return (
     <EditorContext.Provider value={{
       ir,
@@ -345,7 +397,13 @@ export const EditorProvider = ({ children }) => {
       addFrontendPage,
       deleteFrontendPage,
       simulationDb,
-      setSimulationDb
+      setSimulationDb,
+      projectsList,
+      currentProject,
+      saveProject,
+      loadProject,
+      deleteSavedProject,
+      fetchProjects
     }}>
       {children}
     </EditorContext.Provider>

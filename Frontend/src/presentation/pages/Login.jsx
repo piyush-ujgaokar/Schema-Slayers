@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../../application/context/AuthContext';
+import { Box, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -26,68 +27,85 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Background visual graphics */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center px-4 relative overflow-hidden font-sans">
+      {/* Decorative Warm Accent Blobs */}
+      <div className="absolute top-[-10%] right-[-10%] w-[450px] h-[450px] rounded-full bg-brand-border/40 blur-3xl animate-float"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-brand-border/30 blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
 
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl relative z-10">
+      <div className="max-w-md w-full bg-brand-card border border-brand-border/60 p-8 rounded-3xl shadow-xl shadow-brand-text/5 relative z-10 animate-scale-in">
+        {/* Logo/Icon */}
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/40 mb-3">
-            <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1.7M14 4l2-1.7M14 4v3.5M4 7l2-1M4 7l2 1M4 7v2.5M10 21l2-1.7M10 21l-2-1.7M10 21v-3.5" />
-            </svg>
+          <div className="h-16 w-16 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/10 mb-4 transition duration-300 hover:rotate-6">
+            <Box size={28} className="text-brand-bg" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Welcome Back</h2>
-          <p className="text-slate-400 text-sm mt-2">Sign in to visual stack workspace</p>
+          <h2 className="text-3xl font-extrabold text-brand-text tracking-tight animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            Welcome Back
+          </h2>
+          <p className="text-brand-muted text-sm mt-2.5 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            Enter your credentials to access the workspace
+          </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950/40 border border-red-800 text-red-400 rounded-lg text-sm text-center">
-            {error}
+          <div className="mb-5 p-4 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl text-sm flex items-center gap-2 animate-shake">
+            <AlertCircle size={18} className="shrink-0" />
+            <span className="font-semibold">{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-250"
-              placeholder="name@company.com"
-            />
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-brand-text">Email Address</label>
+            <div className="relative flex items-center">
+              <Mail size={18} className="absolute left-4 text-brand-muted transition duration-200" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-brand-bg/40 border border-brand-border hover:border-brand-accent/50 focus:border-brand-primary focus:bg-brand-card rounded-2xl text-sm text-brand-text focus:outline-none focus:ring-4 focus:ring-brand-accent/10 transition duration-300"
+                placeholder="name@example.com"
+              />
+            </div>
           </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-slate-300">Password</label>
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-semibold text-brand-text">Password</label>
             </div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-250"
-              placeholder="••••••••"
-            />
+            <div className="relative flex items-center">
+              <Lock size={18} className="absolute left-4 text-brand-muted transition duration-200" />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-brand-bg/40 border border-brand-border hover:border-brand-accent/50 focus:border-brand-primary focus:bg-brand-card rounded-2xl text-sm text-brand-text focus:outline-none focus:ring-4 focus:ring-brand-accent/10 transition duration-300"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-lg shadow-indigo-600/30 transition duration-250 active:scale-[0.98] disabled:opacity-50"
+            className="w-full mt-4 py-3.5 bg-brand-primary hover:bg-brand-primary-hover text-brand-bg text-sm font-bold rounded-2xl shadow-lg shadow-brand-primary/10 transition duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <span className="h-5 w-5 border-2 border-brand-bg border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              <>
+                Sign In
+                <ArrowRight size={16} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-400 mt-6">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline">
-            Sign up free
+        <p className="text-center text-sm text-brand-muted mt-8">
+          New to the platform?{' '}
+          <Link to="/register" className="text-brand-text hover:underline font-bold transition">
+            Create an account
           </Link>
         </p>
       </div>

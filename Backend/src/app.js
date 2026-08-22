@@ -13,10 +13,12 @@ app.use(morgan('dev'));
 const authRoutes = require('./routes/auth.routes');
 const compileRoutes = require('./routes/compile.routes');
 const aiRoutes = require('./routes/ai.routes');
+const projectRoutes = require('./routes/project.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/compile', compileRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
