@@ -5,7 +5,7 @@ import { useEditor } from '../../application/context/EditorContext';
 import { DbModelNode, ApiRouteNode, UiPageNode } from './CustomNodes';
 
 export default function Canvas() {
-  const { nodes, edges, setSelectedNode } = useEditor();
+  const { nodes, edges, onNodesChange, onEdgesChange, setSelectedNode } = useEditor();
 
   const nodeTypes = useMemo(() => ({
     dbModel: DbModelNode,
@@ -33,6 +33,8 @@ export default function Canvas() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}

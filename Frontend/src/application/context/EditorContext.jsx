@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
 import apiClient from '../../infrastructure/api/apiClient';
 
 const EditorContext = createContext(null);
@@ -76,6 +77,16 @@ export const EditorProvider = ({ children }) => {
   const [diffAddedNodes, setDiffAddedNodes] = useState(new Set()); // Nodes marked as new from AI changes
   const [projectsList, setProjectsList] = useState([]);
   const [currentProject, setCurrentProject] = useState(null);
+
+  const onNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [setEdges]
+  );
 
   // Fetch projects on mount
   const fetchProjects = async () => {
@@ -381,6 +392,8 @@ export const EditorProvider = ({ children }) => {
       ir,
       nodes,
       edges,
+      onNodesChange,
+      onEdgesChange,
       selectedNode,
       setSelectedNode,
       compiledFiles,

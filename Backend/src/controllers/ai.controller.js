@@ -1,6 +1,6 @@
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Standard fallback responses if GEMINI_API_KEY is not defined
+// Standard fallback responses if GEMINI_API_KEY is not defined or fails
 const handleFallbackPrompt = (prompt, currentIR) => {
   const normalized = prompt.toLowerCase();
   const ir = JSON.parse(JSON.stringify(currentIR)); // deep copy
@@ -177,23 +177,31 @@ exports.processPrompt = async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
 
     const systemInstruction = `
       You are an expert full-stack web application architect.
       You will be given a JSON representing the Application's IR (Intermediate Representation) which consists of:
-      1. database: { models: [] }
-      2. backend: { routes: [] }
-      3. frontend: { pages: [] }
+      1. database: { models: [ { id, name, fields: [ { name, type, required, unique } ] } ] }
+      2. backend: { routes: [ { id, path, method, authRequired, logicSteps: [ { type, model } ] } ] }
+      3. frontend: { pages: [ { id, title, path, components: [ { id, type, title, fields: [ { name, label, type, placeholder } ], submitButton: { text, routeId, onSuccess: { action, path } } } ] } ] }
 
       Your job is to modify this JSON based on the user's natural language prompt.
       Maintain correct relationships:
       - Forms on the frontend page submit to backend routes using a submitButton action that references the correct routeId.
       - Backend routes perform database actions referencing database model names.
-      
-      CRITICAL: You must return ONLY the updated JSON schema representing the IR. 
-      Do not wrap it in markdown block tags except raw JSON syntax, and do not provide any explanation or prose.
+      - Ensure database model ids start with "model_", route ids start with "route_", page ids start with "page_", and component ids start with "comp_". Use unique timestamps or slugs to generate these IDs.
+      - Database field types are strictly limited to 'String', 'Number', 'Boolean', and 'Date'.
+      - Keep existing models, routes, and pages intact unless the user explicitly asks to edit or delete them.
+
+      CRITICAL: You must return ONLY the updated JSON schema representing the IR.
+      Do not write any markdown codeblock tags (like \`\`\`json) and do not provide any explanation or prose. Output only raw JSON.
     `;
 
     const chatInput = `
@@ -208,7 +216,8 @@ exports.processPrompt = async (req, res) => {
     });
 
     const text = response.response.text().trim();
-    // Parse the output (handling markdown ```json blocks if LLM outputs them)
+    
+    // Parse the output (cleaning up any accidental markdown wrapper tags if returned)
     const jsonStr = text.replace(/^```json/, '').replace(/```$/, '').trim();
     const updatedIR = JSON.parse(jsonStr);
 
