@@ -106,10 +106,10 @@ function DashboardContent() {
           </div>
           <div>
             <h1 className="text-base font-extrabold tracking-tight text-brand-text">
-              {currentProject ? currentProject.name : "SchemaSlayer"}
+              {"SchemaSlayer"}
             </h1>
             <span className="text-xs text-brand-muted font-bold uppercase tracking-wider">
-              {currentProject ? "WorkFlow" : "Tech Architecture"}
+              {"Tech Architecture"}
             </span>
           </div>
         </div>
