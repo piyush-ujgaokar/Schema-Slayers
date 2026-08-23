@@ -2,7 +2,7 @@ const Project = require('../models/project.model');
 
 exports.saveProject = async (req, res) => {
   try {
-    const { id, name, ir } = req.body;
+    const { id, name, ir, files } = req.body;
     const userId = req.user._id;
 
     if (!name || !ir) {
@@ -15,7 +15,7 @@ exports.saveProject = async (req, res) => {
       // Update existing project
       project = await Project.findOneAndUpdate(
         { _id: id, owner: userId },
-        { name, ir },
+        { name, ir, files },
         { new: true, runValidators: true }
       );
 
@@ -27,6 +27,7 @@ exports.saveProject = async (req, res) => {
       project = new Project({
         name,
         ir,
+        files: files || {},
         owner: userId,
       });
       await project.save();
@@ -38,6 +39,7 @@ exports.saveProject = async (req, res) => {
         id: project._id,
         name: project.name,
         ir: project.ir,
+        files: project.files,
         updatedAt: project.updatedAt,
       },
     });
@@ -56,6 +58,7 @@ exports.getProjects = async (req, res) => {
       id: p._id,
       name: p.name,
       ir: p.ir,
+      files: p.files || {},
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
     }));

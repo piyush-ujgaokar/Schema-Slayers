@@ -73,7 +73,10 @@ export const EditorProvider = ({ children }) => {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null); // Node details for inspector panel
-  const [compiledFiles, setCompiledFiles] = useState({});
+  const [compiledFiles, setCompiledFiles] = useState(() => {
+    const saved = localStorage.getItem('visual_builder_compiled_files');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [isCompiling, setIsCompiling] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [simulationDb, setSimulationDb] = useState([]); // Simulated backend in-memory database records
@@ -88,6 +91,10 @@ export const EditorProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('visual_builder_current_ir', JSON.stringify(ir));
   }, [ir]);
+
+  useEffect(() => {
+    localStorage.setItem('visual_builder_compiled_files', JSON.stringify(compiledFiles));
+  }, [compiledFiles]);
 
   useEffect(() => {
     if (currentProject) {
@@ -214,7 +221,7 @@ export const EditorProvider = ({ children }) => {
   const triggerCompilation = async () => {
     setIsCompiling(true);
     try {
-      const response = await apiClient.post('/compile', { ir });
+      const response = await apiClient.post('/compile', { ir, existingFiles: compiledFiles });
       setCompiledFiles(response.data.files);
     } catch (error) {
       console.error('Compilation backend error:', error);
@@ -237,8 +244,10 @@ export const EditorProvider = ({ children }) => {
       const timer = setTimeout(async () => {
         try {
           await apiClient.post('/projects', {
+            id: currentProject.id,
             name: currentProject.name,
-            ir
+            ir,
+            files: compiledFiles
           });
           console.log('Background auto-save to MongoDB succeeded.');
         } catch (error) {
@@ -247,7 +256,7 @@ export const EditorProvider = ({ children }) => {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [ir, currentProject]);
+  }, [ir, compiledFiles, currentProject]);
 
   // AI assistant prompt processor
   const sendAIPrompt = async (prompt) => {
@@ -396,7 +405,8 @@ export const EditorProvider = ({ children }) => {
       const response = await apiClient.post('/projects', {
         id: currentProject?.id,
         name,
-        ir
+        ir,
+        files: compiledFiles
       });
       const saved = response.data.project;
       setCurrentProject({ id: saved.id, name: saved.name });
@@ -410,6 +420,9 @@ export const EditorProvider = ({ children }) => {
 
   const loadProject = (project) => {
     setIr(project.ir);
+    if (project.files) {
+      setCompiledFiles(project.files);
+    }
     setCurrentProject({ id: project.id, name: project.name });
   };
 
@@ -438,10 +451,12 @@ export const EditorProvider = ({ children }) => {
       frontend: { pages: [] }
     };
     setIr(blankIR);
+    setCompiledFiles({});
     setCurrentProject(null);
     setSelectedNode(null);
     setDiffAddedNodes(new Set());
     localStorage.removeItem('visual_builder_current_project');
+    localStorage.removeItem('visual_builder_compiled_files');
     localStorage.setItem('visual_builder_current_ir', JSON.stringify(blankIR));
   };
 

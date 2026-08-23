@@ -15,6 +15,10 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     required: true,
   },
+  files: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
 }, {
   timestamps: true,
 });

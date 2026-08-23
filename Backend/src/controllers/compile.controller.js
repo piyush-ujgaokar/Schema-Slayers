@@ -214,7 +214,7 @@ export default function ${page.id.replace(/[^a-zA-Z]/g, '')}() {
 
 exports.compileCode = async (req, res) => {
   try {
-    const { ir } = req.body;
+    const { ir, existingFiles } = req.body;
     if (!ir) {
       return res.status(400).json({ message: 'Missing IR structure to compile' });
     }
@@ -225,21 +225,64 @@ exports.compileCode = async (req, res) => {
     if (ir.database && ir.database.models) {
       ir.database.models.forEach(model => {
         const filepath = `backend/src/models/${model.name}.model.js`;
-        files[filepath] = generateMongooseModel(model);
+        let modelCode = generateMongooseModel(model);
+
+        if (existingFiles && existingFiles[filepath]) {
+          const oldCode = existingFiles[filepath];
+          const schemaRegex = /new\s+mongoose\.Schema\s*\(\s*\{/i;
+          const match = oldCode.match(schemaRegex);
+          
+          if (match) {
+            const startBraceIndex = oldCode.indexOf('{', match.index);
+            if (startBraceIndex !== -1) {
+              let braceCount = 1;
+              let endBraceIndex = -1;
+              for (let i = startBraceIndex + 1; i < oldCode.length; i++) {
+                if (oldCode[i] === '{') braceCount++;
+                else if (oldCode[i] === '}') {
+                  braceCount--;
+                  if (braceCount === 0) {
+                    endBraceIndex = i;
+                    break;
+                  }
+                }
+              }
+              
+              if (endBraceIndex !== -1) {
+                const fieldsStr = model.fields.map(f => {
+                  let typeStr = f.type;
+                  return `  ${f.name}: {
+    type: ${typeStr},
+    required: ${f.required ? 'true' : 'false'},
+    unique: ${f.unique ? 'true' : 'false'}
+  }`;
+                }).join(',\n');
+                
+                modelCode = oldCode.substring(0, startBraceIndex + 1) + '\n' + fieldsStr + '\n' + oldCode.substring(endBraceIndex);
+              }
+            }
+          }
+        }
+        files[filepath] = modelCode;
       });
     }
 
     // 2. Compile Backend Controllers & Routes
     if (ir.backend && ir.backend.routes) {
       ir.backend.routes.forEach(route => {
-        // Find if linked to a model
         const modelStep = route.logicSteps?.find(s => s.type === 'db_create' || s.type === 'db_query');
         const modelName = modelStep ? modelStep.model : (ir.database?.models?.[0]?.name || 'Item');
         
         const cleanPath = route.path.replace(/\/:id/g, '').replace(/\/api\//g, '');
         const nameSlug = cleanPath.replace(/\//g, '_');
         const filename = `backend/src/controllers/${nameSlug}_${route.method.toLowerCase()}.controller.js`;
-        files[filename] = generateExpressController(route, modelName);
+        
+        // Preserve existing controller code if it exists to keep custom edits
+        if (existingFiles && existingFiles[filename]) {
+          files[filename] = existingFiles[filename];
+        } else {
+          files[filename] = generateExpressController(route, modelName);
+        }
       });
 
       // Unified router
@@ -250,7 +293,40 @@ exports.compileCode = async (req, res) => {
     if (ir.frontend && ir.frontend.pages) {
       ir.frontend.pages.forEach(page => {
         const filepath = `frontend/src/pages/${page.id}.jsx`;
-        files[filepath] = generateReactPage(page, ir.backend?.routes || []);
+        let pageCode = generateReactPage(page, ir.backend?.routes || []);
+
+        if (existingFiles && existingFiles[filepath]) {
+          const oldCode = existingFiles[filepath];
+          const formRegex = /<form[\s\S]*?>([\s\S]*?)<\/form>/i;
+          const formMatch = oldCode.match(formRegex);
+          
+          if (formMatch) {
+            const innerCode = formMatch[1];
+            const comp = page.components[0] || {};
+            const formFields = comp.fields || [];
+            const newFieldsJSX = formFields.map(f => `
+        <div>
+          <label className="block text-sm font-medium mb-1 text-slate-300">${f.label}</label>
+          <input
+            type="${f.type}"
+            placeholder="${f.placeholder || ''}"
+            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            {...register('${f.name}', { required: true })}
+          />
+        </div>`).join('\n        ');
+            
+            const newButtonJSX = `\n        <button
+          type="submit"
+          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded font-semibold transition"
+        >
+          ${comp.submitButton?.text || 'Submit'}
+        </button>`;
+            
+            const newFormContents = '\n        ' + newFieldsJSX + '\n        ' + newButtonJSX + '\n      ';
+            pageCode = oldCode.replace(innerCode, newFormContents);
+          }
+        }
+        files[filepath] = pageCode;
       });
     }
 
