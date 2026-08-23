@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Login from '../../presentation/pages/Login';
 import Register from '../../presentation/pages/Register';
 import Dashboard from '../../presentation/pages/Dashboard';
+import Landing from '../../presentation/pages/Landing';
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }) => {
@@ -21,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -33,6 +34,7 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
         
@@ -45,7 +47,7 @@ export default function AppRoutes() {
           } 
         />
         
-        <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} replace />} />
       </Routes>
     </BrowserRouter>
   );

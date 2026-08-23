@@ -106,10 +106,10 @@ function DashboardContent() {
           </div>
           <div>
             <h1 className="text-base font-extrabold tracking-tight text-brand-text">
-              {currentProject ? currentProject.name : "VisualStack"}
+              {currentProject ? currentProject.name : "SchemaSlayer"}
             </h1>
             <span className="text-xs text-brand-muted font-bold uppercase tracking-wider">
-              {currentProject ? "WorkFlow" : "MERN Builder"}
+              {currentProject ? "WorkFlow" : "Tech Architecture"}
             </span>
           </div>
         </div>
@@ -132,7 +132,7 @@ function DashboardContent() {
             title="Create a new Schema Design"
           >
             <FolderPlus size={16} />
-            New Design
+            New Architecture
           </button>
 
           <button

@@ -3,16 +3,16 @@ import { useEditor } from '../../application/context/EditorContext';
 import { FileCode, Clipboard, Check, Download, Folder, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 
 export default function CodeViewer() {
-  const { compiledFiles, isCompiling, updateCompiledFile, fetchAICodeTemplates } = useEditor();
+  const { compiledFiles, isCompiling, updateCompiledFile, fetchAICodeTemplates, applySuggestionFuzzy } = useEditor();
   const [selectedFile, setSelectedFile] = useState(() => {
     return localStorage.getItem('visual_builder_selected_file') || '';
   });
   const [copied, setCopied] = useState(false);
 
-  // AI suggestions states
-  const [aiSuggestions, setAiSuggestions] = useState([]);
+  // Chat/Suggestions Copilot states
+  const [chatMessages, setChatMessages] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [suggestionsError, setSuggestionsError] = useState('');
+  const [promptInput, setPromptInput] = useState('');
   const [applySuccessId, setApplySuccessId] = useState(null);
 
   const filepaths = Object.keys(compiledFiles);
@@ -37,30 +37,48 @@ export default function CodeViewer() {
     }
   }, [compiledFiles, filepaths, selectedFile]);
 
-  // Query AI Templates when active file changes
+  // Reset chat history and load welcome card + 3 auto-suggestions on file switch
   useEffect(() => {
     if (!selectedFile || !compiledFiles[selectedFile]) {
-      setAiSuggestions([]);
+      setChatMessages([]);
       return;
     }
 
-    const loadSuggestions = async () => {
+    const loadInitialSuggestions = async () => {
       setSuggestionsLoading(true);
-      setSuggestionsError('');
-      setAiSuggestions([]);
+      
+      const basename = selectedFile.split('/').pop();
+      setChatMessages([
+        {
+          sender: 'assistant',
+          text: `Hi! I've scanned \`${basename}\`. Here are 3 automatic enhancement ideas. You can also type below to ask for custom changes!`
+        }
+      ]);
 
       const result = await fetchAICodeTemplates(selectedFile, compiledFiles[selectedFile]);
       setSuggestionsLoading(false);
 
-      if (result.success) {
-        setAiSuggestions(result.templates || []);
+      if (result.success && result.templates) {
+        setChatMessages(prev => [
+          ...prev,
+          {
+            sender: 'assistant',
+            text: 'I generated these initial suggestions. Click Apply to merge them:',
+            suggestions: result.templates
+          }
+        ]);
       } else {
-        setSuggestionsError(result.message || 'Failed to fetch AI suggestions.');
+        setChatMessages(prev => [
+          ...prev,
+          {
+            sender: 'assistant',
+            text: `Failed to load auto-suggestions: ${result.message || 'Unknown error'}`
+          }
+        ]);
       }
     };
 
-    // Stagger / debounce slightly
-    const timer = setTimeout(loadSuggestions, 300);
+    const timer = setTimeout(loadInitialSuggestions, 300);
     return () => clearTimeout(timer);
   }, [selectedFile]);
 
@@ -83,33 +101,66 @@ export default function CodeViewer() {
     document.body.removeChild(link);
   };
 
-  const handleApplySuggestion = (suggestion, index) => {
+  const handleSendPrompt = async (e) => {
+    if (e) e.preventDefault();
+    if (!promptInput.trim() || !selectedFile) return;
+
+    const userPrompt = promptInput.trim();
+    setPromptInput('');
+
+    // Append user message
+    setChatMessages(prev => [
+      ...prev,
+      {
+        sender: 'user',
+        text: userPrompt
+      }
+    ]);
+
+    setSuggestionsLoading(true);
+
+    const result = await fetchAICodeTemplates(selectedFile, compiledFiles[selectedFile], userPrompt);
+    setSuggestionsLoading(false);
+
+    if (result.success && result.templates && result.templates.length > 0) {
+      setChatMessages(prev => [
+        ...prev,
+        {
+          sender: 'assistant',
+          text: `I've created ${result.templates.length} target code changes for your request. You can merge them below:`,
+          suggestions: result.templates
+        }
+      ]);
+    } else {
+      setChatMessages(prev => [
+        ...prev,
+        {
+          sender: 'assistant',
+          text: result.success 
+            ? "I analyzed the code but couldn't find matching target slots for that change. Try rephrasing your request!"
+            : `Error generating custom templates: ${result.message || 'Please try again.'}`
+        }
+      ]);
+    }
+  };
+
+  const handleApplySuggestion = (suggestion, uniqueCardId) => {
     const currentCode = compiledFiles[selectedFile];
     
-    // Exact match search
-    const hasTarget = currentCode.includes(suggestion.targetSnippet);
+    // Apply suggestions using fuzzy whitespace/variable normalization search-and-replace
+    const newCode = applySuggestionFuzzy(currentCode, suggestion.targetSnippet, suggestion.replacementSnippet);
     
-    if (!hasTarget) {
-      // Soft trim check fallback to handle minor spacing differences
-      const normalizedTarget = suggestion.targetSnippet.replace(/\s+/g, '');
-      const normalizedCode = currentCode.replace(/\s+/g, '');
-      
-      if (normalizedCode.includes(normalizedTarget)) {
-        alert('Code snippet matches with slight formatting spacing differences. Applying replacement.');
-      } else {
-        alert(
-          `Could not apply this template automatically!\n\nReason: The code in the editor has been modified, and the AI target block does not match precisely.\n\nTemplate proposed snippet:\n${suggestion.targetSnippet}`
-        );
-        return;
-      }
+    if (!newCode) {
+      alert(
+        `Could not apply this template automatically!\n\nReason: The code in the editor has been modified, and the AI target block does not match precisely.\n\nTemplate proposed snippet:\n${suggestion.targetSnippet}`
+      );
+      return;
     }
 
-    // Replace target with replacement
-    const newCode = currentCode.replace(suggestion.targetSnippet, suggestion.replacementSnippet);
     updateCompiledFile(selectedFile, newCode);
     
     // Set visual confirmation flash
-    setApplySuccessId(index);
+    setApplySuccessId(uniqueCardId);
     setTimeout(() => setApplySuccessId(null), 3000);
   };
 
@@ -243,80 +294,112 @@ export default function CodeViewer() {
       <div className="w-80 bg-brand-card border-l border-brand-border flex flex-col h-full shrink-0">
         <div className="p-4 border-b border-brand-border flex items-center gap-2 shrink-0">
           <Sparkles size={16} className="text-brand-primary fill-brand-primary animate-pulse" />
-          <span className="text-xs font-bold text-brand-text uppercase tracking-wider">AI Code Templates</span>
+          <span className="text-xs font-bold text-brand-text uppercase tracking-wider">File Copilot Chat</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {suggestionsLoading && (
-            <div className="py-12 flex flex-col items-center justify-center gap-2.5 text-brand-muted text-xs">
-              <Loader2 size={24} className="animate-spin text-brand-primary" />
-              <span>Analyzing code in Gemini...</span>
-            </div>
-          )}
+        {/* Scrollable Chat Feed */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col min-h-0">
+          {chatMessages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex flex-col max-w-[85%] ${
+                msg.sender === 'user' ? 'self-end items-end' : 'self-start items-start'
+              }`}
+            >
+              {/* Bubble wrapper */}
+              <div
+                className={`p-3.5 rounded-2xl text-xs leading-relaxed font-medium shadow-sm ${
+                  msg.sender === 'user'
+                    ? 'bg-brand-primary text-brand-bg rounded-tr-none'
+                    : 'bg-brand-bg/50 border border-brand-border text-brand-text rounded-tl-none'
+                }`}
+              >
+                {msg.text}
+              </div>
 
-          {suggestionsError && (
-            <div className="py-8 text-center text-rose-600 text-xs px-2 leading-relaxed">
-              ⚠️ {suggestionsError}
-            </div>
-          )}
+              {/* Suggestions Cards attachment */}
+              {msg.suggestions && msg.suggestions.length > 0 && (
+                <div className="mt-3.5 space-y-3.5 w-full min-w-[240px]">
+                  {msg.suggestions.map((item, idx) => {
+                    const uniqueCardId = `${index}_${idx}`;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 bg-brand-card border-2 rounded-xl transition flex flex-col gap-2 shadow-sm ${
+                          applySuccessId === uniqueCardId
+                            ? 'border-emerald-500 bg-emerald-50/10'
+                            : 'border-brand-border hover:border-brand-accent/40'
+                        }`}
+                      >
+                        <div>
+                          <h5 className="text-[11px] font-bold text-brand-text leading-snug flex items-center gap-1.5">
+                            {applySuccessId === uniqueCardId ? (
+                              <Check size={12} className="text-emerald-600 shrink-0" />
+                            ) : (
+                              <Sparkles size={11} className="text-brand-primary shrink-0" />
+                            )}
+                            {item.title}
+                          </h5>
+                          <p className="text-[10px] text-brand-muted mt-1 leading-normal">
+                            {item.description}
+                          </p>
+                        </div>
 
-          {!suggestionsLoading && !suggestionsError && aiSuggestions.length === 0 && (
-            <div className="py-12 text-center text-brand-muted text-xs italic px-3 leading-relaxed">
-              No template enhancements found for this file.
-            </div>
-          )}
-
-          {!suggestionsLoading && !suggestionsError && aiSuggestions.length > 0 && (
-            <div className="space-y-4">
-              <span className="block text-[10px] uppercase font-bold text-brand-muted tracking-wider">
-                Upgrade Recommendations
-              </span>
-              
-              {aiSuggestions.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 bg-brand-bg/40 border-2 rounded-2xl transition duration-250 flex flex-col gap-2.5 shadow-sm ${
-                    applySuccessId === idx
-                      ? 'border-emerald-500 bg-emerald-50/20'
-                      : 'border-brand-border hover:border-brand-accent/50'
-                  }`}
-                >
-                  <div>
-                    <h5 className="text-sm font-bold text-brand-text leading-snug flex items-center gap-1.5">
-                      {applySuccessId === idx ? (
-                        <Check size={14} className="text-emerald-600" />
-                      ) : (
-                        <Sparkles size={13} className="text-brand-primary shrink-0" />
-                      )}
-                      {item.title}
-                    </h5>
-                    <p className="text-xs text-brand-muted mt-1 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleApplySuggestion(item, idx)}
-                    className={`w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
-                      applySuccessId === idx
-                        ? 'bg-emerald-600 text-white cursor-default'
-                        : 'bg-brand-primary hover:bg-brand-primary-hover text-brand-bg cursor-pointer'
-                    }`}
-                  >
-                    {applySuccessId === idx ? (
-                      'Template Injected!'
-                    ) : (
-                      <>
-                        Apply Suggestion
-                        <ArrowRight size={13} />
-                      </>
-                    )}
-                  </button>
+                        <button
+                          onClick={() => handleApplySuggestion(item, uniqueCardId)}
+                          className={`w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition ${
+                            applySuccessId === uniqueCardId
+                              ? 'bg-emerald-600 text-white cursor-default'
+                              : 'bg-brand-primary hover:bg-brand-primary-hover text-brand-bg cursor-pointer'
+                          }`}
+                        >
+                          {applySuccessId === uniqueCardId ? (
+                            'Applied!'
+                          ) : (
+                            <>
+                              Apply Changes
+                              <ArrowRight size={10} />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
+            </div>
+          ))}
+
+          {/* Loading state indicator */}
+          {suggestionsLoading && (
+            <div className="self-start flex items-center gap-2 bg-brand-bg/50 border border-brand-border p-3.5 rounded-2xl rounded-tl-none max-w-[85%] text-xs text-brand-muted font-bold">
+              <Loader2 size={14} className="animate-spin text-brand-primary animate-pulse" />
+              <span>Thinking...</span>
             </div>
           )}
         </div>
+
+        {/* Chat Input Box (At the bottom) */}
+        <form
+          onSubmit={handleSendPrompt}
+          className="p-3 border-t border-brand-border bg-brand-card flex items-center gap-2 shrink-0"
+        >
+          <input
+            type="text"
+            placeholder="Ask for code additions..."
+            value={promptInput}
+            onChange={(e) => setPromptInput(e.target.value)}
+            disabled={suggestionsLoading}
+            className="flex-1 px-3 py-2 bg-brand-bg border border-brand-border rounded-xl text-xs text-brand-text placeholder-brand-muted/70 focus:outline-none focus:border-brand-primary transition"
+          />
+          <button
+            type="submit"
+            disabled={suggestionsLoading || !promptInput.trim()}
+            className="p-2 bg-brand-primary hover:bg-brand-primary-hover disabled:bg-brand-border/40 text-brand-bg disabled:text-brand-muted rounded-xl transition cursor-pointer"
+          >
+            <ArrowRight size={14} />
+          </button>
+        </form>
       </div>
     </div>
   );

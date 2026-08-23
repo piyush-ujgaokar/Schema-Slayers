@@ -458,74 +458,109 @@ export const EditorProvider = ({ children }) => {
       const modelName = filename.replace('.model.js', '');
 
       try {
-        const schemaRegex = /new\s+mongoose\.Schema\s*\(\s*\{([\s\S]*?)\}\s*(?:,|\))/i;
+        const schemaRegex = /new\s+mongoose\.Schema\s*\(\s*\{/i;
         const match = content.match(schemaRegex);
         const parsedFields = [];
 
         if (match) {
-          const fieldsBlock = match[1];
-          const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
-          let fieldMatch;
-          
-          while ((fieldMatch = fieldRegex.exec(fieldsBlock)) !== null) {
-            const fieldName = fieldMatch[1];
-            let fieldType = 'String';
-            let required = false;
-            let unique = false;
-
-            if (fieldMatch[2]) {
-              const innerProps = fieldMatch[2];
-              const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
-              if (typeMatch) fieldType = typeMatch[1];
-              if (innerProps.match(/required\s*:\s*true/i)) required = true;
-              if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
-            } else if (fieldMatch[3]) {
-              fieldType = fieldMatch[3];
+          const startBraceIndex = content.indexOf('{', match.index);
+          if (startBraceIndex !== -1) {
+            let braceCount = 1;
+            let endBraceIndex = -1;
+            for (let i = startBraceIndex + 1; i < content.length; i++) {
+              if (content[i] === '{') braceCount++;
+              else if (content[i] === '}') {
+                braceCount--;
+                if (braceCount === 0) {
+                  endBraceIndex = i;
+                  break;
+                }
+              }
             }
+            
+            if (endBraceIndex !== -1) {
+              const fieldsBlock = content.substring(startBraceIndex + 1, endBraceIndex);
+              const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
+              let fieldMatch;
+              
+              while ((fieldMatch = fieldRegex.exec(fieldsBlock)) !== null) {
+                const fieldName = fieldMatch[1];
+                let fieldType = 'String';
+                let required = false;
+                let unique = false;
 
-            if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
-              parsedFields.push({
-                name: fieldName,
-                type: fieldType,
-                required,
-                unique
-              });
+                if (fieldMatch[2]) {
+                  const innerProps = fieldMatch[2];
+                  const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
+                  if (typeMatch) fieldType = typeMatch[1];
+                  if (innerProps.match(/required\s*:\s*true/i)) required = true;
+                  if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
+                } else if (fieldMatch[3]) {
+                  fieldType = fieldMatch[3];
+                }
+
+                if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
+                  parsedFields.push({
+                    name: fieldName,
+                    type: fieldType,
+                    required,
+                    unique
+                  });
+                }
+              }
             }
           }
         }
 
         // Also check for any .add({ ... }) blocks (e.g. soft delete extensions)
-        const addRegex = /\.add\s*\(\s*\{([\s\S]*?)\}\s*\)/gi;
+        const addRegex = /\.add\s*\(\s*\{/gi;
         let addMatch;
         while ((addMatch = addRegex.exec(content)) !== null) {
-          const addBlock = addMatch[1];
-          const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
-          let fieldMatch;
-          
-          while ((fieldMatch = fieldRegex.exec(addBlock)) !== null) {
-            const fieldName = fieldMatch[1];
-            let fieldType = 'String';
-            let required = false;
-            let unique = false;
-
-            if (fieldMatch[2]) {
-              const innerProps = fieldMatch[2];
-              const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
-              if (typeMatch) fieldType = typeMatch[1];
-              if (innerProps.match(/required\s*:\s*true/i)) required = true;
-              if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
-            } else if (fieldMatch[3]) {
-              fieldType = fieldMatch[3];
+          const startBraceIndex = content.indexOf('{', addMatch.index);
+          if (startBraceIndex !== -1) {
+            let braceCount = 1;
+            let endBraceIndex = -1;
+            for (let i = startBraceIndex + 1; i < content.length; i++) {
+              if (content[i] === '{') braceCount++;
+              else if (content[i] === '}') {
+                braceCount--;
+                if (braceCount === 0) {
+                  endBraceIndex = i;
+                  break;
+                }
+              }
             }
+            if (endBraceIndex !== -1) {
+              const addBlock = content.substring(startBraceIndex + 1, endBraceIndex);
+              const fieldRegex = /(\w+)\s*:\s*(?:\{([\s\S]*?)\}|(\w+))/g;
+              let fieldMatch;
+              
+              while ((fieldMatch = fieldRegex.exec(addBlock)) !== null) {
+                const fieldName = fieldMatch[1];
+                let fieldType = 'String';
+                let required = false;
+                let unique = false;
 
-            if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
-              if (!parsedFields.some(f => f.name === fieldName)) {
-                parsedFields.push({
-                  name: fieldName,
-                  type: fieldType,
-                  required,
-                  unique
-                });
+                if (fieldMatch[2]) {
+                  const innerProps = fieldMatch[2];
+                  const typeMatch = innerProps.match(/type\s*:\s*(\w+)/);
+                  if (typeMatch) fieldType = typeMatch[1];
+                  if (innerProps.match(/required\s*:\s*true/i)) required = true;
+                  if (innerProps.match(/unique\s*:\s*true/i)) unique = true;
+                } else if (fieldMatch[3]) {
+                  fieldType = fieldMatch[3];
+                }
+
+                if (['String', 'Number', 'Boolean', 'Date'].includes(fieldType)) {
+                  if (!parsedFields.some(f => f.name === fieldName)) {
+                    parsedFields.push({
+                      name: fieldName,
+                      type: fieldType,
+                      required,
+                      unique
+                    });
+                  }
+                }
               }
             }
           }
@@ -553,6 +588,119 @@ export const EditorProvider = ({ children }) => {
         console.error('Failed to sync code edits back to visual models:', err);
       }
     }
+
+    // 3. Bidirectional sync: Parse React Page form fields back to frontend page components
+    if (filepath.startsWith('frontend/src/pages/') && filepath.endsWith('.jsx')) {
+      const filename = filepath.split('/').pop();
+      const pageId = filename.replace('.jsx', '');
+
+      try {
+        const registerRegex = /register\(\s*['"](\w+)['"]\s*(?:,\s*\{([\s\S]*?)\})?\)/g;
+        let regMatch;
+        const parsedFields = [];
+
+        while ((regMatch = registerRegex.exec(content)) !== null) {
+          const fieldName = regMatch[1];
+          let required = false;
+          if (regMatch[2] && regMatch[2].includes('required: true')) {
+            required = true;
+          }
+
+          let inputType = 'text';
+          if (fieldName.toLowerCase().includes('password')) inputType = 'password';
+          if (fieldName.toLowerCase().includes('email')) inputType = 'email';
+          if (fieldName.toLowerCase().includes('price') || fieldName.toLowerCase().includes('quantity') || fieldName.toLowerCase().includes('age')) inputType = 'number';
+
+          parsedFields.push({
+            name: fieldName,
+            label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1),
+            type: inputType,
+            placeholder: `Enter ${fieldName}`,
+            required
+          });
+        }
+
+        const targetPage = ir.frontend.pages.find(p => p.id === pageId);
+        if (targetPage && targetPage.components && targetPage.components[0]) {
+          const currentFields = targetPage.components[0].fields || [];
+          const fieldsChanged = JSON.stringify(currentFields) !== JSON.stringify(parsedFields);
+          
+          if (fieldsChanged) {
+            setIr(prev => {
+              const updatedPages = prev.frontend.pages.map(p => {
+                if (p.id === pageId) {
+                  const updatedComp = { ...p.components[0], fields: parsedFields };
+                  return { ...p, components: [updatedComp] };
+                }
+                return p;
+              });
+              return {
+                ...prev,
+                frontend: { ...prev.frontend, pages: updatedPages }
+              };
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync React page edits back to frontend IR:', err);
+      }
+    }
+  };
+
+  const applySuggestionFuzzy = (originalCode, targetSnippet, replacementSnippet) => {
+    if (originalCode.includes(targetSnippet)) {
+      return originalCode.replace(targetSnippet, replacementSnippet);
+    }
+
+    const normalize = (str) => str.replace(/\s+/g, '');
+    const normalizedOriginal = normalize(originalCode);
+    const normalizedTarget = normalize(targetSnippet);
+
+    let matchIndex = normalizedOriginal.indexOf(normalizedTarget);
+    
+    if (matchIndex === -1) {
+      let adjustedTarget = targetSnippet;
+      if (targetSnippet.includes('items = await')) {
+        adjustedTarget = targetSnippet.replace('items = await', 'entities = await');
+      } else if (targetSnippet.includes('entities = await')) {
+        adjustedTarget = targetSnippet.replace('entities = await', 'items = await');
+      }
+
+      if (originalCode.includes(adjustedTarget)) {
+        return originalCode.replace(adjustedTarget, replacementSnippet);
+      }
+
+      const normalizedAdjusted = normalize(adjustedTarget);
+      const adjustedMatchIndex = normalizedOriginal.indexOf(normalizedAdjusted);
+      if (adjustedMatchIndex !== -1) {
+        matchIndex = adjustedMatchIndex;
+      }
+    }
+
+    if (matchIndex !== -1) {
+      let origStart = -1;
+      let origEnd = -1;
+      let normalizedPos = 0;
+
+      for (let i = 0; i < originalCode.length; i++) {
+        if (!/\s/.test(originalCode[i])) {
+          if (normalizedPos === matchIndex) {
+            origStart = i;
+          }
+          if (normalizedPos === matchIndex + normalizedTarget.length - 1) {
+            origEnd = i + 1;
+            break;
+          }
+          normalizedPos++;
+        }
+      }
+
+      if (origStart !== -1 && origEnd !== -1) {
+        return originalCode.substring(0, origStart) + replacementSnippet + originalCode.substring(origEnd);
+      }
+    }
+
+    return null;
   };
 
   const bindNodesManual = (sourceId, targetId) => {
@@ -654,9 +802,9 @@ export const EditorProvider = ({ children }) => {
     }
   };
 
-  const fetchAICodeTemplates = async (filename, code) => {
+  const fetchAICodeTemplates = async (filename, code, prompt = '') => {
     try {
-      const response = await apiClient.post('/ai/code-templates', { filename, code });
+      const response = await apiClient.post('/ai/code-templates', { filename, code, prompt });
       return { success: true, templates: response.data.templates };
     } catch (error) {
       console.error('Failed to generate code templates:', error);
@@ -698,7 +846,8 @@ export const EditorProvider = ({ children }) => {
       fetchAICodeTemplates,
       createNewProject,
       bindNodesManual,
-      unbindNodesManual
+      unbindNodesManual,
+      applySuggestionFuzzy
     }}>
       {children}
     </EditorContext.Provider>

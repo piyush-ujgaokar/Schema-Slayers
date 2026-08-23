@@ -73,7 +73,7 @@ const getFallbackTemplates = (filename, code) => {
 };
 
 exports.generateTemplates = async (req, res) => {
-  const { filename, code } = req.body;
+  const { filename, code, prompt } = req.body;
 
   if (!filename || !code) {
     return res.status(400).json({ message: 'Filename and code content are required parameters.' });
@@ -99,33 +99,67 @@ exports.generateTemplates = async (req, res) => {
       }
     });
 
-    const systemInstruction = `
-      You are an expert AI developer coach.
-      Analyze the given source code file (named "${filename}"):
-      
-      CODE:
-      \`\`\`
-      ${code}
-      \`\`\`
+    let systemInstruction = '';
+    if (prompt) {
+      systemInstruction = `
+        You are an expert AI developer coach.
+        Analyze the given source code file (named "${filename}"):
+        
+        CODE:
+        \`\`\`
+        ${code}
+        \`\`\`
 
-      Generate 3 specific, useful template suggestions/upgrades that can be applied to this code.
-      For each suggestion, identify an EXACT substring (with matching indentation/whitespace) in the code that can be replaced, and provide a replacement snippet.
-      
-      CRITICAL RULES:
-      - The "targetSnippet" must exist EXACTLY in the provided code, including all newlines and indentation. If it does not match exactly, the replace function will fail!
-      - Keep targetSnippet concise (e.g. 1-4 lines containing the target section) and the replacementSnippet must be a complete drop-in replacement.
-      - Return ONLY a JSON array of suggestions. No markdown prose.
+        The user has requested the following custom change to this code:
+        "${prompt}"
+        
+        Generate exactly 2-3 specific, useful template suggestions/upgrades that implement this request.
+        For each suggestion, identify an EXACT substring (with matching indentation/whitespace) in the code that can be replaced, and provide a replacement snippet that satisfies the request.
+        
+        CRITICAL RULES:
+        - The "targetSnippet" must exist EXACTLY in the provided code, including all newlines and indentation. If it does not match exactly, the replace function will fail!
+        - Keep targetSnippet concise (e.g. 1-4 lines containing the target section) and the replacementSnippet must be a complete drop-in replacement.
+        - Return ONLY a JSON array of suggestions. No markdown prose.
 
-      Conform strictly to this JSON format:
-      [
-        {
-          "title": "Clear, short title (e.g. Add Email Validation)",
-          "description": "Short explanation of why this upgrade helps.",
-          "targetSnippet": "Exact code block from the above source file that will be replaced",
-          "replacementSnippet": "The new replacement code block containing the changes"
-        }
-      ]
-    `;
+        Conform strictly to this JSON format:
+        [
+          {
+            "title": "Clear, short title (e.g. Add Email Validation)",
+            "description": "Short explanation of why this upgrade helps.",
+            "targetSnippet": "Exact code block from the above source file that will be replaced",
+            "replacementSnippet": "The new replacement code block containing the changes"
+          }
+        ]
+      `;
+    } else {
+      systemInstruction = `
+        You are an expert AI developer coach.
+        Analyze the given source code file (named "${filename}"):
+        
+        CODE:
+        \`\`\`
+        ${code}
+        \`\`\`
+
+        Generate 3 specific, useful template suggestions/upgrades that can be applied to this code.
+        For each suggestion, identify an EXACT substring (with matching indentation/whitespace) in the code that can be replaced, and provide a replacement snippet.
+        
+        CRITICAL RULES:
+        - The "targetSnippet" must exist EXACTLY in the provided code, including all newlines and indentation. If it does not match exactly, the replace function will fail!
+        - Keep targetSnippet concise (e.g. 1-4 lines containing the target section) and the replacementSnippet must be a complete drop-in replacement.
+        - Return ONLY a JSON array of suggestions. No markdown prose.
+
+        Conform strictly to this JSON format:
+        [
+          {
+            "title": "Clear, short title (e.g. Add Email Validation)",
+            "description": "Short explanation of why this upgrade helps.",
+            "targetSnippet": "Exact code block from the above source file that will be replaced",
+            "replacementSnippet": "The new replacement code block containing the changes"
+          }
+        ]
+      `;
+    }
 
     const response = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: systemInstruction }] }]
