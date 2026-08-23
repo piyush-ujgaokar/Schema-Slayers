@@ -1,6 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const path=require('path')
+
 
 const app = express();
 
@@ -21,6 +23,9 @@ app.use('/api/compile', compileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/ai/code-templates', aiTemplatesRoutes);
+app.use(express.static(path.join(__dirname,'../public')))
+
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -32,5 +37,11 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
+
+
+
+app.get("*name",(req,res)=>{
+  res.sendFile(path.join(__dirname, "../public/index.html"))
+})
 
 module.exports = app;
