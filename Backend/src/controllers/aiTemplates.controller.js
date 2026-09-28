@@ -90,14 +90,42 @@ exports.generateTemplates = async (req, res) => {
     });
   }
 
+// Resilient multi-model cascade to handle Google 503 transient spikes
+const CASCADE_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash'
+];
+
+async function callGeminiWithCascade(genAI, contents) {
+  let lastError = null;
+
+  for (const modelName of CASCADE_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const response = await model.generateContent({ contents });
+      const text = response.response.text().trim();
+      if (text) {
+        return text;
+      }
+    } catch (err) {
+      console.warn(`[AI Template Cascade] Model ${modelName} returned error: ${err.message}. Trying next candidate...`);
+      lastError = err;
+    }
+  }
+
+  throw lastError;
+}
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json'
-      }
-    });
 
     let systemInstruction = '';
     if (prompt) {
@@ -161,11 +189,8 @@ exports.generateTemplates = async (req, res) => {
       `;
     }
 
-    const response = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: systemInstruction }] }]
-    });
-
-    const text = response.response.text().trim();
+    const contents = [{ role: 'user', parts: [{ text: systemInstruction }] }];
+    const text = await callGeminiWithCascade(genAI, contents);
     
     // Parse the output (cleaning up any accidental markdown wrapper tags if returned)
     const jsonStr = text.replace(/^```json/, '').replace(/```$/, '').trim();
@@ -176,7 +201,7 @@ exports.generateTemplates = async (req, res) => {
       templates: suggestions
     });
   } catch (error) {
-    console.error('Gemini API code-template error:', error);
+    console.error('Gemini API code-template error after cascade:', error);
     const suggestions = getFallbackTemplates(filename, code);
     return res.status(200).json({
       message: 'AI templates generated via fallback rules (API error)',

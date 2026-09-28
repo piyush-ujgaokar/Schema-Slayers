@@ -154,10 +154,100 @@ const handleFallbackPrompt = (prompt, currentIR) => {
         }]
       });
     }
+  } else {
+    // Dynamic entity generator for any other concept (e.g. task, blog, doctor, hotel, course)
+    const stopWords = ['add', 'create', 'make', 'generate', 'build', 'new', 'with', 'for', 'and', 'the', 'a', 'an', 'to', 'in', 'on', 'of', 'some', 'fields', 'page', 'api', 'schema', 'model'];
+    const words = normalized
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.includes(w));
+
+    const rawName = words[0] || 'Item';
+    const entityName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    const idSlug = rawName.toLowerCase();
+
+    if (!ir.database.models.some(m => m.name.toLowerCase() === rawName.toLowerCase())) {
+      ir.database.models.push({
+        id: `model_${idSlug}_${Date.now()}`,
+        name: entityName,
+        fields: [
+          { name: 'name', type: 'String', required: true },
+          { name: 'description', type: 'String', required: false },
+          { name: 'status', type: 'String', required: false }
+        ]
+      });
+    }
+
+    const routePath = `/api/${idSlug}s`;
+    const routeId = `route_create_${idSlug}_${Date.now()}`;
+    if (!ir.backend.routes.some(r => r.path === routePath && r.method === 'POST')) {
+      ir.backend.routes.push({
+        id: routeId,
+        path: routePath,
+        method: 'POST',
+        authRequired: false,
+        logicSteps: [
+          { type: 'validate' },
+          { type: 'db_create', model: entityName }
+        ]
+      });
+    }
+
+    if (!ir.frontend.pages.some(p => p.id === `page_new_${idSlug}`)) {
+      ir.frontend.pages.push({
+        id: `page_new_${idSlug}`,
+        title: `Add New ${entityName}`,
+        path: `/${idSlug}s/new`,
+        components: [{
+          id: `comp_form_${idSlug}_${Date.now()}`,
+          type: 'Form',
+          title: `Create ${entityName}`,
+          fields: [
+            { name: 'name', label: `${entityName} Name`, type: 'text', placeholder: `Enter ${entityName} title` },
+            { name: 'description', label: 'Description', type: 'text', placeholder: 'Enter details' }
+          ],
+          submitButton: { text: `Save ${entityName}`, routeId, onSuccess: { action: 'redirect', path: `/${idSlug}s` } }
+        }]
+      });
+    }
   }
 
   return ir;
 };
+
+// Resilient multi-model cascade to handle Google 503 transient spikes
+const CASCADE_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash'
+];
+
+async function callGeminiWithCascade(genAI, contents) {
+  let lastError = null;
+
+  for (const modelName of CASCADE_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          responseMimeType: "application/json",
+        }
+      });
+
+      const response = await model.generateContent({ contents });
+      const text = response.response.text().trim();
+      if (text) {
+        return text;
+      }
+    } catch (err) {
+      console.warn(`[AI Cascade] Model ${modelName} returned error: ${err.message}. Trying next model in cascade...`);
+      lastError = err;
+    }
+  }
+
+  throw lastError;
+}
 
 exports.processPrompt = async (req, res) => {
   const { prompt, ir } = req.body;
@@ -178,12 +268,6 @@ exports.processPrompt = async (req, res) => {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-3.5-flash',
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
 
     const systemInstruction = `
       You are an expert full-stack web application architect.
@@ -211,12 +295,9 @@ exports.processPrompt = async (req, res) => {
       User Command: "${prompt}"
     `;
 
-    const response = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: systemInstruction + '\n\n' + chatInput }] }],
-    });
-
-    const text = response.response.text().trim();
-    console.log("ai response ",text);
+    const contents = [{ role: 'user', parts: [{ text: systemInstruction + '\n\n' + chatInput }] }];
+    const text = await callGeminiWithCascade(genAI, contents);
+    console.log("ai response ", text);
     
     // Parse the output (cleaning up any accidental markdown wrapper tags if returned)
     const jsonStr = text.replace(/^```json/, '').replace(/```$/, '').trim();
@@ -227,7 +308,7 @@ exports.processPrompt = async (req, res) => {
       ir: updatedIR
     });
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('Gemini API Error after cascade:', error);
     // Graceful fallback on API error
     const updatedIR = handleFallbackPrompt(prompt, ir);
     return res.status(200).json({
